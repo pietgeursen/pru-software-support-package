@@ -38,8 +38,10 @@
 #include "rsc_table_pru.h"
 
 
-#define	BCLK 0x02
-#define	SW 0x10
+#define	BCLK 0x20
+#define	LR 0x08
+#define	DIN 0x04
+#define	SELECT 0x40
 
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
@@ -81,27 +83,29 @@ void main(void)
 	CT_IEP.TMR_GLB_CFG = 0x11;
 
   __R30 &= ~BCLK; //set to zero
-  __R30 &= ~SW; //set to zero
+  __R30 &= ~LR; //set to zero
 
   uint32_t tick_count = 0;
+  uint32_t data = 0;
+  uint32_t data_shift_num = 31;
 
 	/* Poll until R31.31 is set */
   while(1){
-    /* Verify that the IEP is the source of the interrupt */
-    if( __R31 & 0x80000000 ){
-      CT_INTC.SECR0 = (1 << 7);
-      /* Clear the status of the interrupt */
-      if(CT_IEP.TMR_CMP_STS_bit.CMP_HIT & 0x01){
-        __R30 ^= BCLK;
-        tick_count ++;
-
-        if(tick_count == 64){
-          tick_count = 0;
-          __R30 ^= SW;
-        }
-
-        CT_IEP.TMR_CMP_STS_bit.CMP_HIT = 0x01;
+    if(CT_IEP.TMR_CMP_STS_bit.CMP_HIT & 0x01){
+      __R30 ^= BCLK;
+      if((__R30 & BCLK) == 0){
+        data |= (__R31 & DIN) << data_shift_num; 
+        data_shift_num --; 
       }
+
+      if(tick_count == 0){
+        __R30 ^= LR;
+        tick_count = 64;
+        data_shift_num = 31;
+      }
+
+      tick_count --;
+      CT_IEP.TMR_CMP_STS_bit.CMP_HIT = 0x01;
     }
   }
 	/* Disable counter */

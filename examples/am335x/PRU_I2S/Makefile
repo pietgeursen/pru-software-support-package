@@ -101,8 +101,9 @@ run:
 	modprobe pru_rproc
 
 config-pins:
-	config-pin 1_29 pruin
-	config-pin 1_31 pruout
-	config-pin 1_33 pruout
+	config-pin 2_28 pruout
+	config-pin 2_30 pruout
+	config-pin 2_32 pruin
+	config-pin 2_34 pruout
 
 
